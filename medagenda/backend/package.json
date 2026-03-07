@@ -11,6 +11,7 @@
     "db:studio": "drizzle-kit studio"
   },
   "dependencies": {
+    "@medagenda/shared": "workspace:*",
     "@fastify/cookie": "latest",
     "@fastify/cors": "latest",
     "fastify-type-provider-zod": "latest",

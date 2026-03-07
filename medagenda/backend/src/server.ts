@@ -7,6 +7,7 @@ import Fastify from 'fastify'
 import fastifyCookie from '@fastify/cookie'
 import fastifyCors from '@fastify/cors'
 import { authPlugin } from './modules/auth/plugin.js'
+import { patientsPlugin } from './modules/patients/plugin.js'
 
 const app = Fastify({ logger: true })
 
@@ -21,6 +22,7 @@ await app.register(fastifyCors, {
 })
 
 await app.register(authPlugin, { prefix: '/auth' })
+await app.register(patientsPlugin, { prefix: '/patients' })
 
 app.get('/health', async () => ({ status: 'ok' }))
 

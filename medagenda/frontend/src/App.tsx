@@ -2,6 +2,8 @@ import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom'
 import { AuthProvider } from '@/contexts/AuthContext'
 import { ConsentProvider } from '@/contexts/ConsentContext'
 import { Login } from '@/pages/Login'
+import { NewPatient } from '@/pages/patients/NewPatient'
+import { PatientDetail } from '@/pages/patients/PatientDetail'
 
 function Placeholder({ label }: { label: string }) {
   return (
@@ -18,6 +20,8 @@ export function App() {
         <ConsentProvider>
           <Routes>
             <Route path="/login" element={<Login />} />
+            <Route path="/patients/new" element={<NewPatient />} />
+            <Route path="/patients/:id" element={<PatientDetail />} />
             <Route
               path="/admin"
               element={<Placeholder label="Dashboard Admin" />}

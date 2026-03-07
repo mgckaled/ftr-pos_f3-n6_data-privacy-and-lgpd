@@ -8,6 +8,26 @@ export const roleEnum = pgEnum('role', [
   'patient',
 ])
 
+// LGPD: Art. 7º — bases legais para tratamento de dados pessoais (rol taxativo)
+export const legalBasisEnum = pgEnum('legal_basis', [
+  'consent',
+  'legal_obligation',
+  'contract',
+  'legitimate_interest',
+  'vital_interest',
+  'health_care',
+  'research',
+])
+
+// LGPD: Art. 8º — finalidades específicas de consentimento (nunca consentimento genérico)
+export const consentPurposeEnum = pgEnum('consent_purpose', [
+  'medical_treatment',
+  'data_sharing_partners',
+  'research',
+  'insurance',
+  'marketing',
+])
+
 // LGPD: Art. 6º, X — responsabilização — categorias de ações auditáveis
 export const auditActionEnum = pgEnum('audit_action', [
   'create',

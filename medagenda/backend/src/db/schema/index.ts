@@ -1,3 +1,6 @@
 export * from './enums'
 export * from './users'
 export * from './audit-logs'
+export * from './patients'
+export * from './patient-tokens'
+export * from './consents'

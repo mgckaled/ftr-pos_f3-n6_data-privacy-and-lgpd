@@ -15,7 +15,7 @@ export function requireRole(...roles: Role[]) {
         userId,
         action: 'read',
         resource: request.routeOptions?.url ?? request.url,
-        legalBasis: 'none',
+        legalBasis: null,
         ipAddress: request.ip,
         userAgent: request.headers['user-agent'],
         metadata: { denied: true, requiredRoles: roles, actualRole: role },

@@ -137,7 +137,7 @@ Organize livremente, respeitando três arquivos estratégicos obrigatórios:
 
 Cada fase entrega o sistema em estado funcional e testável. Para iniciar uma fase, informe: "implemente a Fase N".
 
-### Fase 1 — Fundação e controle de acesso `[ ]`
+### Fase 1 — Fundação e controle de acesso `[X - Concluído]`
 
 Cobre: Módulo 3 (Segurança da Informação) e fundamentos do Módulo 1.
 
