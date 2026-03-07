@@ -24,9 +24,9 @@ export async function withRLS<T>(
   const client = await pool.connect()
   try {
     await client.query('BEGIN')
-    // SET LOCAL tem escopo de transação — garante isolamento entre requisições
-    await client.query(`SET LOCAL app.current_user_id = '${userId}'`)
-    await client.query(`SET LOCAL app.current_role = '${role}'`)
+    // set_config(..., true) equivale a SET LOCAL — escopo de transação, sem interpolação de strings
+    await client.query(`SELECT set_config('app.current_user_id', $1, true)`, [userId])
+    await client.query(`SELECT set_config('app.current_role', $1, true)`, [role])
     const result = await fn(client)
     await client.query('COMMIT')
     return result

@@ -18,9 +18,9 @@ export async function createPatientService(
   try {
     await client.query('BEGIN')
 
-    // LGPD: Art. 6º, VII — RLS ativado na transação para isolar o escopo de acesso
-    await client.query(`SET LOCAL app.current_user_id = '${actorUserId}'`)
-    await client.query(`SET LOCAL app.current_role = '${actorRole}'`)
+    // LGPD: Art. 6º, VII — RLS ativado na transação; set_config equivale a SET LOCAL
+    await client.query(`SELECT set_config('app.current_user_id', $1, true)`, [actorUserId])
+    await client.query(`SELECT set_config('app.current_role', $1, true)`, [actorRole])
 
     const tx = drizzle(client, { schema })
 
@@ -86,8 +86,8 @@ export async function listPatientsService(actorUserId: string, actorRole: string
 
   try {
     await client.query('BEGIN')
-    await client.query(`SET LOCAL app.current_user_id = '${actorUserId}'`)
-    await client.query(`SET LOCAL app.current_role = '${actorRole}'`)
+    await client.query(`SELECT set_config('app.current_user_id', $1, true)`, [actorUserId])
+    await client.query(`SELECT set_config('app.current_role', $1, true)`, [actorRole])
 
     const tx = drizzle(client, { schema })
 
@@ -127,8 +127,8 @@ export async function getPatientService(
 
   try {
     await client.query('BEGIN')
-    await client.query(`SET LOCAL app.current_user_id = '${actorUserId}'`)
-    await client.query(`SET LOCAL app.current_role = '${actorRole}'`)
+    await client.query(`SELECT set_config('app.current_user_id', $1, true)`, [actorUserId])
+    await client.query(`SELECT set_config('app.current_role', $1, true)`, [actorRole])
 
     const tx = drizzle(client, { schema })
 
