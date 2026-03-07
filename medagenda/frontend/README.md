@@ -1,73 +1,147 @@
-# React + TypeScript + Vite
+# MedAgenda — Frontend
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+Interface web do sistema de agendamento médico com conformidade à LGPD (Lei nº 13.709/2018).
 
-Currently, two official plugins are available:
+## Stack
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+| Tecnologia | Versão / Detalhe |
+| --- | --- |
+| Build tool | Vite (`react-ts` template) |
+| Framework | React + TypeScript |
+| Estilização | Tailwind CSS v4 (`@tailwindcss/vite` — sem `tailwind.config.js`) |
+| Componentes | shadcn/ui |
+| Formulários | `react-hook-form` + `@hookform/resolvers/zod` |
+| Validação | Zod (schemas importados de `@medagenda/shared`) |
+| HTTP client | axios (instância centralizada com `withCredentials: true`) |
+| Roteamento | React Router DOM |
 
-## React Compiler
+## Estrutura de diretórios
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
-
-## Expanding the ESLint configuration
-
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
-
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
-
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+```
+src/
+├── lib/
+│   └── api.ts                    # instância axios centralizada
+├── contexts/
+│   ├── AuthContext.tsx            # { userId, role, name } — JWT nunca em memória
+│   └── ConsentContext.tsx         # estado do fluxo de consentimento em andamento
+├── components/
+│   ├── ProtectedRoute.tsx         # guard de rota por role
+│   └── ui/                        # componentes shadcn/ui
+│       ├── button.tsx
+│       ├── card.tsx
+│       ├── input.tsx
+│       ├── label.tsx
+│       ├── badge.tsx
+│       ├── checkbox.tsx
+│       ├── separator.tsx
+│       └── textarea.tsx
+└── pages/
+    ├── Login.tsx
+    └── patients/
+        ├── NewPatient.tsx         # cadastro em 2 passos com consentimento
+        └── PatientDetail.tsx      # visualização do paciente
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+## Rotas
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
+| Rota | Role(s) | Página | Status |
+| --- | --- | --- | --- |
+| `/login` | público | Login | Implementado |
+| `/patients/new` | receptionist, admin | Cadastro de paciente | Implementado |
+| `/patients/:id` | admin, doctor, receptionist | Detalhe do paciente | Implementado |
+| `/appointments` | doctor, receptionist | Agendamentos | Placeholder |
+| `/privacy` | patient | Painel do titular (Art. 18) | Placeholder |
+| `/admin` | admin | Dashboard DPO | Placeholder |
+| `/unauthorized` | — | Acesso negado | Placeholder |
 
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+## Autenticação
+
+O JWT **nunca** é armazenado em `localStorage` ou em memória — vive exclusivamente no
+cookie `httpOnly` gerenciado pelo browser.
+
+Fluxo:
+
+1. `POST /auth/login` → backend define cookie `httpOnly; SameSite=Strict`
+2. `AuthContext` chama `GET /auth/me` na inicialização para popular `{ userId, role, name }`
+3. Todas as requisições seguintes enviam o cookie automaticamente via `withCredentials: true`
+4. `POST /auth/logout` → backend limpa o cookie; `AuthContext` zera o estado local
+
+O `AuthContext` expõe apenas `{ userId, role, name }`. Dados adicionais do usuário
+são buscados sob demanda e nunca ficam em cache global.
+
+## Formulário de cadastro de paciente (`/patients/new`)
+
+Implementa o fluxo de coleta de dados pessoais com consentimento em conformidade com
+o Art. 8º da LGPD:
+
+### Passo 1 — Dados pessoais
+
+Coleta os campos obrigatórios (`name`, `cpf`, `birthDate`) e opcionais (`email`, `phone`).
+O schema Zod é importado de `@medagenda/shared` — mesma definição usada pelo backend,
+sem duplicação.
+
+### Passo 2 — Consentimentos por finalidade
+
+- Exibe cada uma das 5 finalidades do `consentPurposeEnum` com descrição em linguagem simples
+- **Nenhum checkbox é pré-marcado** — Art. 8º exige consentimento livre e inequívoco
+- Cada finalidade pode ser aceita ou recusada individualmente
+- `policyVersion` é registrada em cada item como prova do consentimento (Art. 8º, §2º)
+- O formulário só é submetido após o Passo 2 — nenhum dado trafega antes do consentimento
+
+Finalidades disponíveis:
+
+| Chave | Descrição exibida |
+| --- | --- |
+| `medical_treatment` | Tratamento médico e gestão de consultas |
+| `data_sharing_partners` | Compartilhamento com parceiros de saúde |
+| `research` | Pesquisa científica com dados anonimizados |
+| `insurance` | Processamento por operadoras de seguro |
+| `marketing` | Comunicações, novidades e promoções |
+
+## Proteção de rotas
+
+O componente `<ProtectedRoute roles={[...]} />` verifica o `role` do `AuthContext`:
+
+- Não autenticado → redireciona para `/login`
+- Autenticado sem permissão → redireciona para `/unauthorized`
+- Cada redirecionamento por falta de permissão gera registro em `audit_logs` no backend
+
+## Pacote compartilhado (`@medagenda/shared`)
+
+Schemas Zod importados diretamente do pacote workspace — nunca redefinidos no frontend:
+
+```typescript
+import {
+  insertPatientBodySchema,
+  consentPurposes,
+  consentPurposeDescriptions,
+  type InsertPatientBody,
+} from '@medagenda/shared'
+```
+
+## Instância axios
+
+```typescript
+// src/lib/api.ts
+export const api = axios.create({
+  baseURL: import.meta.env.VITE_API_URL ?? 'http://localhost:3000',
+  withCredentials: true, // envia cookie httpOnly automaticamente
+})
+```
+
+Toda comunicação com o backend passa por esta instância. O uso direto de `fetch` fora
+dela é proibido pela convenção do projeto.
+
+## Variáveis de ambiente
+
+```
+VITE_API_URL=http://localhost:3000
+```
+
+## Scripts
+
+```bash
+pnpm dev      # servidor Vite em modo desenvolvimento
+pnpm build    # compila para produção (dist/)
+pnpm preview  # pré-visualiza o build de produção
 ```
