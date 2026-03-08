@@ -4,6 +4,8 @@
 
 Projeto didático para estudo aplicado da Lei nº 13.709/2018 (LGPD) através de um sistema de agendamento de consultas médicas. O domínio de negócio é simples e secundário — o protagonista é a conformidade. Cada decisão técnica relevante deve conter um comentário no código referenciando o artigo ou princípio da LGPD que a justifica.
 
+> **Antes de explorar o filesystem**, leia `.claude/docs/project-state.md` — ele mapeia todos os arquivos existentes, tabelas, módulos, padrões arquiteturais e o que cada fase ainda precisa implementar. Evita tool calls desnecessárias de exploração.
+
 ---
 
 ## Stack
@@ -138,25 +140,25 @@ Organize livremente, respeitando três arquivos estratégicos obrigatórios:
 
 Cada fase entrega o sistema em estado funcional e testável. Para iniciar uma fase, informe: "implemente a Fase N".
 
-### Fase 1 — Fundação e controle de acesso `[X - Concluído ]`
+### Fase 1 — Fundação e controle de acesso `[x]`
 
 Cobre: Módulo 3 (Segurança da Informação) e fundamentos do Módulo 1.
 
 Entregas: Docker Compose com PostgreSQL 16 + Node.js + React; criação dos dois schemas; migrations com Drizzle Kit; tabelas `users` e `audit_logs`; autenticação JWT com `jose`; middleware RBAC; políticas RLS no PostgreSQL por role; seed com usuários de cada role para testes.
 
-### Fase 2 — Cadastro de pacientes e consentimento `[X - Concluído]`
+### Fase 2 — Cadastro de pacientes e consentimento `[x]`
 
 Cobre: Módulo 1 (Fundamentos da LGPD) e Módulo 4 (Privacidade by Design).
 
 Entregas: tabelas `patients`, `patient_tokens` e `consents`; fluxo de cadastro com consentimento por finalidade; validação Zod gerada via `drizzle-zod` (princípio da necessidade — Art. 6º, III); formulário React com shadcn; registro automático em `audit_logs` em toda operação sobre `patients`.
 
-### Fase 3 — Agendamento e ciclo de vida dos dados `[ ]`
+### Fase 3 — Agendamento e ciclo de vida dos dados `[x]`
 
 Cobre: Módulo 2 (Ciclo de Vida dos Dados).
 
 Entregas: tabelas `appointments` e `medical_records`; fluxo de agendamento no frontend; políticas de retenção com `retentionExpiresAt`; job de limpeza automática (soft delete → hard delete por base legal); distinção explícita entre soft delete e eliminação real (Art. 5º, XIV); view materializada de estatísticas anonimizadas sem identificadores (Art. 5º, XI); pseudonimização operacional via `patient_tokens` nos logs; configuração do `@fastify/swagger` + `@scalar/fastify-api-reference` em `/reference` — todos os endpoints documentados com schemas Zod como fonte de verdade do OpenAPI spec.
 
-### Fase 4 — Segurança avançada e incidentes `[ ]`
+### Fase 4 — Segurança avançada e incidentes `[ ]`  ← FASE ATIVA
 
 Cobre: Módulo 3 (aprofundamento) e Módulo 5 (Documentação e Compliance — parte técnica).
 

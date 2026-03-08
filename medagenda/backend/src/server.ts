@@ -56,10 +56,12 @@ await app.register(fastifySwagger, {
 })
 
 // Scalar UI em /reference
-// IMPORTANTE: se a UI abrir em branco, acessar /documentation/json primeiro para confirmar que o spec está sendo gerado
+// @fastify/swagger v8+ não expõe rotas HTTP — apenas gera o spec internamente
+// O Scalar detecta @fastify/swagger automaticamente (sem configuration.spec.url)
+// Spec JSON disponível em: GET /reference/openapi.json (rota do próprio Scalar)
+// Spec YAML disponível em: GET /reference/openapi.yaml
 await app.register(scalarApiReference, {
   routePrefix: '/reference',
-  configuration: { url: '/documentation/json' },
 })
 
 await app.register(authPlugin, { prefix: '/auth' })
@@ -71,6 +73,13 @@ app.get('/health', async () => ({ status: 'ok' }))
 
 try {
   await app.listen({ port: 3000, host: '0.0.0.0' })
+
+  console.log('\n  MedAgenda API')
+  console.log('  ─────────────────────────────────────────')
+  console.log('  Health:    http://localhost:3000/health')
+  console.log('  Spec JSON: http://localhost:3000/reference/openapi.json')
+  console.log('  Docs UI:   http://localhost:3000/reference')
+  console.log('  ─────────────────────────────────────────\n')
 
   // LGPD: Art. 6º, I — finalidade — job de retenção garante cumprimento das políticas de ciclo de vida
   scheduleRetentionCleanup()

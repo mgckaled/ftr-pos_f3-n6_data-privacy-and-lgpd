@@ -13,6 +13,8 @@ API REST do sistema de agendamento médico com conformidade à LGPD (Lei nº 13.
 | Validação | Zod + `drizzle-zod` |
 | Autenticação | JWT via `jose` — HS256, expiração 1h, cookie `httpOnly` |
 | Hash de senha | bcryptjs (rounds = 12) |
+| API Docs | `@fastify/swagger` + `@scalar/fastify-api-reference` |
+| Job de retenção | `node-cron` — limpeza diária às 02h |
 | Containers | Docker + Docker Compose |
 
 ## Estrutura de diretórios
@@ -20,9 +22,9 @@ API REST do sistema de agendamento médico com conformidade à LGPD (Lei nº 13.
 ```plaintext
 src/
 ├── db/
-│   ├── index.ts          # pool pg + instância drizzle + helper withRLS()
-│   ├── seed.ts           # usuários iniciais de cada role
-│   ├── migrations/       # SQL gerado pelo drizzle-kit
+│   ├── index.ts               # pool pg + instância drizzle + helper withRLS()
+│   ├── seed.ts                # usuários iniciais de cada role
+│   ├── migrations/            # SQL gerado pelo drizzle-kit
 │   └── schema/
 │       ├── enums.ts
 │       ├── users.ts
@@ -30,20 +32,33 @@ src/
 │       ├── patients.ts
 │       ├── patient-tokens.ts
 │       ├── consents.ts
+│       ├── appointments.ts
+│       ├── medical-records.ts
+│       ├── appointment-stats.ts
 │       └── index.ts
+├── jobs/
+│   └── retention-cleanup.ts   # cron diário — hard delete, anonimização
 ├── lib/
-│   └── jwt.ts            # signJWT / verifyJWT
+│   └── jwt.ts                 # signJWT / verifyJWT
 ├── middleware/
-│   ├── auth.ts           # extrai JWT do cookie; popula request.user
-│   ├── rbac.ts           # requireRole(...roles) — 403 + audit em negações
-│   └── audit.ts          # recordAudit() — helper para registrar operações
+│   ├── auth.ts                # extrai JWT do cookie; popula request.user
+│   ├── rbac.ts                # requireRole(...roles) — 403 + audit em negações
+│   └── audit.ts               # recordAudit() — helper para registrar operações
 └── modules/
     ├── auth/
-    │   ├── plugin.ts     # POST /auth/login, GET /auth/me, POST /auth/logout
+    │   ├── plugin.ts          # POST /auth/login, GET /auth/me, POST /auth/logout
     │   ├── service.ts
     │   └── schema.ts
-    └── patients/
-        ├── plugin.ts     # POST /patients, GET /patients, GET /patients/:id
+    ├── patients/
+    │   ├── plugin.ts          # POST /patients, GET /patients, GET /patients/:id
+    │   ├── service.ts
+    │   └── schema.ts
+    ├── appointments/
+    │   ├── plugin.ts          # CRUD de agendamentos + stats anonimizadas
+    │   ├── service.ts
+    │   └── schema.ts
+    └── medical-records/
+        ├── plugin.ts          # POST e GET /medical-records
         ├── service.ts
         └── schema.ts
 ```
@@ -53,7 +68,7 @@ src/
 ### Schemas PostgreSQL
 
 - `public` — dados pessoais comuns (Art. 5º, I) e tabelas de conformidade
-- `private` — dados sensíveis de saúde (Art. 5º, II) — implementado na Fase 4
+- `private` — dados sensíveis de saúde (Art. 5º, II) com RLS próprio
 
 ### Tabelas implementadas
 
@@ -89,6 +104,38 @@ Titulares dos dados. Núcleo do modelo de privacidade.
 | `retentionExpiresAt` | timestamp | Prazo de retenção (5 anos — base: consentimento) |
 | `anonymizedAt` | timestamp | Data de anonimização — Art. 5º, XI |
 | `deletedAt` | timestamp | Soft delete — Art. 5º, XIV |
+
+#### `appointments`
+
+Consultas agendadas. Retenção obrigatória de 20 anos (CFM nº 1.821/2007).
+
+| Campo | Tipo | Descrição LGPD |
+| --- | --- | --- |
+| `id` | uuid PK | Identificador interno |
+| `patientId` | uuid FK | Dado pessoal — Art. 5º, I |
+| `doctorId` | uuid FK | Dado pessoal — Art. 5º, I |
+| `scheduledAt` | timestamp | Dado pessoal — Art. 5º, I |
+| `status` | enum | `scheduled`, `completed`, `cancelled`, `no_show` — Art. 5º, XIV |
+| `notes` | text | Dado pessoal — Art. 5º, I |
+| `retentionExpiresAt` | timestamp | Prazo legal: 20 anos (CFM) — Art. 6º, I |
+| `deletedAt` | timestamp | Soft delete — Art. 5º, XIV |
+
+#### `private.medical_records`
+
+Prontuários médicos. Isolados no schema `private` com RLS restrito ao médico autor.
+
+| Campo | Tipo | Descrição LGPD |
+| --- | --- | --- |
+| `id` | uuid PK | Identificador interno |
+| `appointmentId` | uuid FK unique | Vínculo 1:1 com a consulta |
+| `patientId` | uuid FK | Dado pessoal — Art. 5º, I |
+| `doctorId` | uuid FK | Médico responsável — controla acesso RLS |
+| `diagnosis` | text | Dado sensível — Art. 5º, II |
+| `prescription` | text | Dado sensível — Art. 5º, II |
+| `clinicalNotes` | text | Dado sensível — Art. 5º, II |
+| `icdCode` | text | Dado sensível — Art. 5º, II |
+| `sensitiveLegalBasis` | enum | Base legal Art. 11 (`health_care`, `vital_interest`, `research_anonymized`, `legal_obligation`) |
+| `retentionExpiresAt` | timestamp | Prazo legal: 20 anos (CFM) — Art. 6º, I |
 
 #### `patient_tokens`
 
@@ -134,22 +181,36 @@ Imutável. Sem `updatedAt` nem `deletedAt`. Registra toda operação sobre dados
 | `metadata` | jsonb | Dados contextuais adicionais |
 | `createdAt` | timestamp | Timestamp imutável |
 
+#### View materializada `appointment_stats`
+
+Estatísticas anonimizadas de agendamentos por mês — sem nenhum identificador pessoal (Art. 5º, XI).
+
+| Campo | Tipo | Descrição |
+| --- | --- | --- |
+| `month` | text | Mês truncado (`date_trunc('month', ...)`) |
+| `total` | int | Total de agendamentos no mês |
+| `completed` | int | Agendamentos realizados |
+| `cancelled` | int | Agendamentos cancelados |
+| `noShow` | int | Não comparecimentos |
+
 ### Enums
 
 | Enum | Valores |
 | --- | --- |
 | `roleEnum` | `admin`, `doctor`, `receptionist`, `patient` |
 | `legalBasisEnum` | `consent`, `legal_obligation`, `contract`, `legitimate_interest`, `vital_interest`, `health_care`, `research` |
+| `sensitiveLegalBasisEnum` | `health_care`, `vital_interest`, `research_anonymized`, `legal_obligation` |
+| `appointmentStatusEnum` | `scheduled`, `completed`, `cancelled`, `no_show` |
 | `consentPurposeEnum` | `medical_treatment`, `data_sharing_partners`, `research`, `insurance`, `marketing` |
 | `auditActionEnum` | `create`, `read`, `update`, `delete`, `export`, `login`, `logout`, `consent_grant`, `consent_revoke`, `data_request`, `incident_report` |
 
 ### RLS (Row Level Security)
 
-Políticas por role definidas com `pgPolicy` no schema Drizzle e geradas automaticamente pelo drizzle-kit. O contexto de sessão é injetado via `SET LOCAL` em cada transação:
+Políticas por role definidas com `pgPolicy` no schema Drizzle e geradas automaticamente pelo drizzle-kit. O contexto de sessão é injetado via `set_config()` em cada transação:
 
 ```sql
-SET LOCAL app.current_user_id = '<userId>';
-SET LOCAL app.current_role    = '<role>';
+SELECT set_config('app.current_user_id', '<userId>', true);
+SELECT set_config('app.current_role',    '<role>',   true);
 ```
 
 | Tabela | admin | doctor | receptionist | patient |
@@ -159,6 +220,8 @@ SET LOCAL app.current_role    = '<role>';
 | `patients` | all | select | all | próprio (via `userId`) |
 | `patient_tokens` | all | — | — | — |
 | `consents` | all | — | all | próprios |
+| `appointments` | all | select (próprios) | all | — |
+| `private.medical_records` | select | all (próprios) | — | — |
 
 ## Endpoints
 
@@ -178,11 +241,54 @@ SET LOCAL app.current_role    = '<role>';
 | `GET` | `/patients` | admin, doctor, receptionist | Lista sem CPF (Art. 6º, III — necessidade) |
 | `GET` | `/patients/:id` | admin, doctor, receptionist | Detalhe; registra acesso em `audit_logs` (Art. 6º, X) |
 
+### Appointments (`/appointments`)
+
+| Método | Rota | Role | Descrição LGPD |
+| --- | --- | --- | --- |
+| `POST` | `/appointments` | admin, receptionist | Cria agendamento; retenção 20 anos (CFM) |
+| `GET` | `/appointments` | admin, doctor, receptionist | Lista — doctor vê apenas as suas (RLS) |
+| `GET` | `/appointments/:id` | admin, doctor, receptionist | Detalhe; registra acesso em `audit_logs` |
+| `PATCH` | `/appointments/:id/cancel` | admin, doctor, receptionist | Soft delete; registra em `audit_logs` |
+| `GET` | `/appointments/stats` | admin | Estatísticas anonimizadas — view materializada (Art. 5º, XI) |
+
+### Medical Records (`/medical-records`)
+
+| Método | Rota | Role | Descrição LGPD |
+| --- | --- | --- | --- |
+| `POST` | `/medical-records` | doctor | Cria prontuário em `private.medical_records`; base legal Art. 11 |
+| `GET` | `/medical-records/:appointmentId` | admin, doctor | Lê prontuário; registra acesso em `audit_logs` |
+
+## Job de retenção
+
+`src/jobs/retention-cleanup.ts` — executado diariamente às 02h via `node-cron`.
+
+Distingue explicitamente três operações (Art. 5º, XIV e Art. 5º, XI):
+
+| Operação | Condição | O que faz |
+| --- | --- | --- |
+| **Hard delete** | `deletedAt IS NOT NULL AND retentionExpiresAt < NOW()` | `DELETE` — eliminação real permanente |
+| **Soft delete** | `deletedAt` preenchido | Acesso bloqueado; dado preservado até prazo |
+| **Anonimização** | `deletedAt IS NULL AND retentionExpiresAt < NOW()` | `UPDATE` campos pessoais para `[anonimizado]`; linha preservada |
+
+Todas as operações registradas em `audit_logs` com `legalBasis: 'legal_obligation'`.
+
+## Documentação OpenAPI
+
+`@fastify/swagger` gera o spec internamente. `@scalar/fastify-api-reference` o serve:
+
+| URL | Descrição |
+| --- | --- |
+| `GET /reference` | Scalar UI interativa |
+| `GET /reference/openapi.json` | Spec OpenAPI em JSON |
+| `GET /reference/openapi.yaml` | Spec OpenAPI em YAML |
+
+> `@fastify/swagger` v8+ não expõe rotas HTTP próprias — as rotas de spec são registradas pelo Scalar.
+
 ## Autenticação e segurança
 
 - JWT carrega `{ sub: userId, role, iat, exp }` — expiração de 1h, sem refresh tokens
 - Token exclusivamente em cookie `httpOnly; SameSite=Strict; Path=/` — nunca exposto ao JavaScript
-- Middleware `authenticate` valida assinatura e expirá-ção antes de qualquer rota protegida
+- Middleware `authenticate` valida assinatura e expiração antes de qualquer rota protegida
 - `requireRole(...roles)` rejeita com 403 e registra tentativa em `audit_logs`
 
 ## Variáveis de ambiente
@@ -199,7 +305,6 @@ PORT=3000
 ```bash
 pnpm dev          # servidor em modo watch (tsx watch)
 pnpm build        # compila TypeScript
-pnpm start        # executa build compilado
 pnpm db:generate  # drizzle-kit generate — gera migration a partir do schema
 pnpm db:migrate   # drizzle-kit migrate — aplica migrations pendentes
 pnpm db:studio    # drizzle-kit studio — UI visual do banco
