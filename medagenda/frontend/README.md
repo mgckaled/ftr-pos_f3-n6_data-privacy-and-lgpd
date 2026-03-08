@@ -17,7 +17,7 @@ Interface web do sistema de agendamento médico com conformidade à LGPD (Lei n�
 
 ## Estrutura de diretórios
 
-```
+```plaintext
 src/
 ├── lib/
 │   └── api.ts                    # instância axios centralizada
@@ -127,6 +127,7 @@ export const api = axios.create({
   baseURL: import.meta.env.VITE_API_URL ?? 'http://localhost:3000',
   withCredentials: true, // envia cookie httpOnly automaticamente
 })
+
 ```
 
 Toda comunicação com o backend passa por esta instância. O uso direto de `fetch` fora
@@ -134,7 +135,7 @@ dela é proibido pela convenção do projeto.
 
 ## Variáveis de ambiente
 
-```
+```env
 VITE_API_URL=http://localhost:3000
 ```
 

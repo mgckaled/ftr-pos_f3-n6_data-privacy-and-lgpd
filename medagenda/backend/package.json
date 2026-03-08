@@ -11,22 +11,26 @@
     "db:studio": "drizzle-kit studio"
   },
   "dependencies": {
-    "@medagenda/shared": "workspace:*",
     "@fastify/cookie": "latest",
     "@fastify/cors": "latest",
-    "fastify-type-provider-zod": "latest",
+    "@fastify/swagger": "^9.7.0",
+    "@medagenda/shared": "workspace:*",
+    "@scalar/fastify-api-reference": "^1.48.0",
     "bcryptjs": "latest",
     "dotenv": "latest",
     "drizzle-orm": "latest",
     "drizzle-zod": "latest",
     "fastify": "latest",
+    "fastify-type-provider-zod": "latest",
     "jose": "latest",
+    "node-cron": "^4.2.1",
     "pg": "latest",
     "zod": "latest"
   },
   "devDependencies": {
     "@types/bcryptjs": "latest",
     "@types/node": "latest",
+    "@types/node-cron": "^3.0.11",
     "@types/pg": "latest",
     "drizzle-kit": "latest",
     "tsx": "latest",

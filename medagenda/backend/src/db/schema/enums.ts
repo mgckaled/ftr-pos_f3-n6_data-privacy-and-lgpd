@@ -28,6 +28,22 @@ export const consentPurposeEnum = pgEnum('consent_purpose', [
   'marketing',
 ])
 
+// LGPD: Art. 5º, XIV — estados explícitos do ciclo de vida do agendamento
+export const appointmentStatusEnum = pgEnum('appointment_status', [
+  'scheduled',
+  'completed',
+  'cancelled',
+  'no_show',
+])
+
+// LGPD: Art. 11 — bases legais específicas para dados sensíveis de saúde (rol distinto do Art. 7º)
+export const sensitiveLegalBasisEnum = pgEnum('sensitive_legal_basis', [
+  'health_care',
+  'vital_interest',
+  'research_anonymized',
+  'legal_obligation',
+])
+
 // LGPD: Art. 6º, X — responsabilização — categorias de ações auditáveis
 export const auditActionEnum = pgEnum('audit_action', [
   'create',

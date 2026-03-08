@@ -8,21 +8,22 @@ Projeto didático para estudo aplicado da Lei nº 13.709/2018 (LGPD) através de
 
 ## Stack
 
-| Camada            | Tecnologia                                                                      |
-| ----------------- | ------------------------------------------------------------------------------- |
-| Package manager   | pnpm (workspaces — monorepo backend + frontend)                                 |
-| Runtime           | Node.js + TypeScript                                                            |
-| Framework backend | Fastify + `@fastify/type-provider-zod`                                          |
-| ORM               | Drizzle ORM (`drizzle-orm`, `drizzle-kit`)                                      |
-| Validação         | Zod + `drizzle-zod` + `@fastify/type-provider-zod` (validação no nível da rota) |
-| Auth              | JWT via `jose` — expiração de 1h, sem refresh tokens                            |
-| Banco de dados    | PostgreSQL 16 (dois schemas: `public` e `private`)                              |
-| Frontend          | Vite (`react-ts` template) + React + TypeScript + Tailwind CSS + shadcn/ui      |
-| Formulários       | `react-hook-form` + `@hookform/resolvers/zod`                                   |
-| HTTP client       | axios (instância centralizada em `src/lib/api.ts`)                              |
-| Estado global     | React Context (`AuthContext` + `ConsentContext`)                                |
-| Auth storage      | `httpOnly` cookie — JWT nunca em `localStorage`                                 |
-| Containers        | Docker + Docker Compose                                                         |
+| Camada            | Tecnologia                                                                                    |
+| ----------------- | --------------------------------------------------------------------------------------------- |
+| Package manager   | pnpm (workspaces — monorepo backend + frontend)                                               |
+| Runtime           | Node.js + TypeScript                                                                          |
+| Framework backend | Fastify + `@fastify/type-provider-zod`                                                        |
+| ORM               | Drizzle ORM (`drizzle-orm`, `drizzle-kit`)                                                    |
+| Validação         | Zod + `drizzle-zod` + `@fastify/type-provider-zod` (validação no nível da rota)               |
+| Auth              | JWT via `jose` — expiração de 1h, sem refresh tokens                                          |
+| API Docs          | `@fastify/swagger` + `@scalar/fastify-api-reference` (UI em `/reference`, a partir da Fase 3) |
+| Banco de dados    | PostgreSQL 16 (dois schemas: `public` e `private`)                                            |
+| Frontend          | Vite (`react-ts` template) + React + TypeScript + Tailwind CSS + shadcn/ui                    |
+| Formulários       | `react-hook-form` + `@hookform/resolvers/zod`                                                 |
+| HTTP client       | axios (instância centralizada em `src/lib/api.ts`)                                            |
+| Estado global     | React Context (`AuthContext` + `ConsentContext`)                                              |
+| Auth storage      | `httpOnly` cookie — JWT nunca em `localStorage`                                               |
+| Containers        | Docker + Docker Compose                                                                       |
 
 ---
 
@@ -137,13 +138,13 @@ Organize livremente, respeitando três arquivos estratégicos obrigatórios:
 
 Cada fase entrega o sistema em estado funcional e testável. Para iniciar uma fase, informe: "implemente a Fase N".
 
-### Fase 1 — Fundação e controle de acesso `[X - Concluído]`
+### Fase 1 — Fundação e controle de acesso `[X - Concluído ]`
 
 Cobre: Módulo 3 (Segurança da Informação) e fundamentos do Módulo 1.
 
 Entregas: Docker Compose com PostgreSQL 16 + Node.js + React; criação dos dois schemas; migrations com Drizzle Kit; tabelas `users` e `audit_logs`; autenticação JWT com `jose`; middleware RBAC; políticas RLS no PostgreSQL por role; seed com usuários de cada role para testes.
 
-### Fase 2 — Cadastro de pacientes e consentimento `[ ]`
+### Fase 2 — Cadastro de pacientes e consentimento `[X - Concluído]`
 
 Cobre: Módulo 1 (Fundamentos da LGPD) e Módulo 4 (Privacidade by Design).
 
@@ -153,7 +154,7 @@ Entregas: tabelas `patients`, `patient_tokens` e `consents`; fluxo de cadastro c
 
 Cobre: Módulo 2 (Ciclo de Vida dos Dados).
 
-Entregas: tabelas `appointments` e `medical_records`; fluxo de agendamento no frontend; políticas de retenção com `retentionExpiresAt`; job de limpeza automática (soft delete → hard delete por base legal); distinção explícita entre soft delete e eliminação real (Art. 5º, XIV); view materializada de estatísticas anonimizadas sem identificadores (Art. 5º, XI); pseudonimização operacional via `patient_tokens` nos logs.
+Entregas: tabelas `appointments` e `medical_records`; fluxo de agendamento no frontend; políticas de retenção com `retentionExpiresAt`; job de limpeza automática (soft delete → hard delete por base legal); distinção explícita entre soft delete e eliminação real (Art. 5º, XIV); view materializada de estatísticas anonimizadas sem identificadores (Art. 5º, XI); pseudonimização operacional via `patient_tokens` nos logs; configuração do `@fastify/swagger` + `@scalar/fastify-api-reference` em `/reference` — todos os endpoints documentados com schemas Zod como fonte de verdade do OpenAPI spec.
 
 ### Fase 4 — Segurança avançada e incidentes `[ ]`
 
