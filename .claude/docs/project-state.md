@@ -14,7 +14,7 @@ Leia este documento antes de explorar o filesystem — ele evita tool calls desn
 | Fase 1 — Fundação e controle de acesso                 | ✅      | Módulo 3      |
 | Fase 2 — Cadastro de pacientes e consentimento         | ✅      | Módulos 1 e 4 |
 | Fase 3 — Agendamento e ciclo de vida dos dados         | ✅      | Módulo 2      |
-| Fase 4 — Segurança avançada e incidentes               | ⬜      | Módulos 3 e 5 |
+| Fase 4 — Segurança avançada e incidentes               | ✅      | Módulos 3 e 5 |
 | Fase 5 — Painel do titular e dashboard de conformidade | ⬜      | Módulos 5 e 6 |
 
 ---
@@ -29,6 +29,7 @@ Leia este documento antes de explorar o filesystem — ele evita tool calls desn
 | `0001_gigantic_roughhouse.sql` | Tabelas users, audit_logs, RLS Fase 1                                                  |
 | `0002_curly_red_hulk.sql`      | Tabelas patients, patient_tokens, consents, RLS Fase 2                                 |
 | `0003_nice_marauders.sql`      | Enums novos, appointments, private.medical_records, view appointment_stats, RLS Fase 3 |
+| `0004_phase4_incidents.sql`    | Enums incident_severity/status, tabela incidents, RLS Fase 4                           |
 
 ### Schemas definidos — `backend/src/db/schema/`
 
@@ -43,12 +44,12 @@ Leia este documento antes de explorar o filesystem — ele evita tool calls desn
 | `appointments.ts`      | `appointments`                                                                                                                                   | public    |
 | `medical-records.ts`   | `medicalRecords`                                                                                                                                 | private   |
 | `appointment-stats.ts` | `appointmentStats` (view materializada)                                                                                                          | public    |
+| `incidents.ts`         | `incidents` — notificação de incidentes Art. 48 + prazo 72h ANPD                                                                                | public    |
 | `index.ts`             | re-exporta tudo                                                                                                                                  | —         |
 
-### Tabelas ainda não criadas (Fases 4 e 5)
+### Tabelas ainda não criadas (Fase 5)
 
 - `data_requests` — direitos do titular Art. 18 (Fase 5)
-- `incidents` — notificação ANPD Art. 48 (Fase 4)
 
 ---
 
@@ -70,10 +71,16 @@ modules/
 │   ├── plugin.ts    — POST /appointments, GET /appointments, GET /appointments/:id, PATCH /appointments/:id/cancel, GET /appointments/stats
 │   ├── service.ts   — createAppointment, listAppointments, getAppointment, cancelAppointment, getAppointmentStats
 │   └── schema.ts    — appointmentResponseSchema, appointmentStatsResponseSchema
-└── medical-records/
-    ├── plugin.ts    — POST /medical-records, GET /medical-records/:appointmentId
-    ├── service.ts   — createMedicalRecord, getMedicalRecord
-    └── schema.ts    — insertMedicalRecordBodySchema, medicalRecordResponseSchema
+├── medical-records/
+│   ├── plugin.ts    — POST /medical-records, GET /medical-records/:appointmentId
+│   ├── service.ts   — createMedicalRecord (encrypt pgcrypto), getMedicalRecord (decrypt raw SQL)
+│   └── schema.ts    — insertMedicalRecordBodySchema, medicalRecordResponseSchema
+├── incidents/
+│   ├── plugin.ts    — POST /incidents, GET /incidents, GET /incidents/:id, PATCH /incidents/:id/notify-anpd
+│   ├── service.ts   — createIncident, listIncidents, getIncident, notifyAnpd + computeAnpdAlert (72h)
+│   └── schema.ts    — insertIncidentBodySchema, incidentResponseSchema, incidentListResponseSchema
+└── dpia/
+    └── plugin.ts    — GET /dpia (documento DPIA estruturado — LGPD Art. 38)
 ```
 
 ### Middleware — `backend/src/middleware/`
@@ -170,14 +177,20 @@ Definidos em `backend/src/db/seed.ts`:
 
 ---
 
-## O que a Fase 4 precisa adicionar
+## O que a Fase 4 adicionou ✅
 
-Referência rápida para não explorar o que já existe:
+1. **Tabela `incidents`** — schema, migration `0004_phase4_incidents.sql`, módulo completo
+2. **Criptografia `pgcrypto`** — `lib/pgcrypto.ts`; CPF em `patients`, diagnosis/prescription/clinicalNotes em `medical_records`
+3. **Módulo incidents** — `POST /incidents`, `GET /incidents`, `GET /incidents/:id`, `PATCH /incidents/:id/notify-anpd`
+4. **Alerta de prazo 72h** — `computeAnpdAlert()` retorna `anpdAlertStatus`: compliant | pending | urgent | overdue
+5. **DPIA** — `GET /dpia` gera documento estruturado (ISO/IEC 29134, Art. 38 LGPD)
+6. **`.env.example`** — todas as variáveis documentadas; `PGCRYPTO_KEY` explicitado
+7. **Script de migração** — `db:encrypt-existing` criptografa dados existentes (idempotente via prefixo "hQ")
 
-1. **Tabela `incidents`** — criar schema, migration, módulo completo
-2. **Tabela `data_requests`** — criar schema (pode ser antecipada da Fase 5 se necessário)
-3. **Criptografia `pgcrypto`** — aplicar em `medical_records` (diagnosis, prescription, clinicalNotes) e CPF em `patients` — os campos existem, falta a camada de criptografia nos services
-4. **Endpoint de notificação de incidentes** — `POST /incidents` com rastreamento de prazo 72h (`notifiedAnpdAt`) referenciando Resolução CD/ANPD nº 15/2024
-5. **Alerta de prazo** — lógica que sinaliza quando `notifiedAnpdAt` está a menos de 12h do limite de 72h desde `detectedAt`
-6. **DPIA** — endpoint ou documento estruturado gerado pelo sistema
-7. **Variáveis de ambiente** — auditoria de `.env` para garantir zero segredos hardcoded
+## O que a Fase 5 precisa adicionar
+
+1. **Tabela `data_requests`** — fila de direitos do titular Art. 18
+2. **Painel do titular** (`/privacy`) — visualizar, corrigir, exportar, revogar, solicitar exclusão
+3. **Dashboard DPO** (`/admin`) — fila de data_requests com SLA, lista de incidents com urgentCount
+4. **ROPA** — gerado automaticamente a partir dos audit_logs
+5. **Relatório de conformidade exportável** como evidência auditável

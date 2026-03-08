@@ -58,3 +58,18 @@ export const auditActionEnum = pgEnum('audit_action', [
   'data_request',
   'incident_report',
 ])
+
+// LGPD: Art. 48 + Resolução CD/ANPD nº 15/2024 — classificação de gravidade do incidente de segurança
+export const incidentSeverityEnum = pgEnum('incident_severity', [
+  'low',
+  'medium',
+  'high',
+  'critical',
+])
+
+// LGPD: Art. 48 — ciclo de vida do incidente: aberto → notificado à ANPD → resolvido
+export const incidentStatusEnum = pgEnum('incident_status', [
+  'open',
+  'notified',
+  'resolved',
+])

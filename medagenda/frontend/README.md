@@ -56,8 +56,8 @@ src/
 | `/appointments` | admin, doctor, receptionist | Lista de agendamentos | Implementado |
 | `/appointments/new` | admin, receptionist | Novo agendamento | Implementado |
 | `/appointments/:id` | admin, doctor, receptionist | Detalhe + prontuário médico | Implementado |
-| `/privacy` | patient | Painel do titular (Art. 18) | Placeholder |
-| `/admin` | admin | Dashboard DPO | Placeholder |
+| `/privacy` | patient | Painel do titular (Art. 18) | Fase 5 |
+| `/admin` | admin | Dashboard DPO: audit_logs, incidents com alerta 72h, fila data_requests | Fase 5 |
 | `/unauthorized` | — | Acesso negado | Placeholder |
 
 ## Autenticação

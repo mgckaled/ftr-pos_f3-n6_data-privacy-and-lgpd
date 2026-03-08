@@ -3,6 +3,7 @@ import { randomUUID } from 'node:crypto'
 import { pool } from '../../db/index.js'
 import * as schema from '../../db/schema/index.js'
 import { auditLogs, consents, patientTokens, patients } from '../../db/schema/index.js'
+import { encryptField } from '../../lib/pgcrypto.js'
 import type { InsertPatientBody } from '@medagenda/shared'
 
 // LGPD: Art. 6º, VIII — prevenção — operação atômica garante consistência dos dados pessoais
@@ -32,8 +33,9 @@ export async function createPatientService(
         email: body.email || null,
         phone: body.phone || null,
         birthDate: body.birthDate,
-        // LGPD: dado pessoal — Art. 5º, I — CPF em texto até Fase 4 (pgcrypto)
-        cpf: body.cpf,
+        // LGPD: Art. 6º, VII + Art. 46 — CPF criptografado em repouso via pgcrypto (Fase 4)
+        // pgp_sym_encrypt com chave de ambiente; prefixo "hQ" identifica dado já cifrado
+        cpf: encryptField(body.cpf) as unknown as string,
         legalBasis: body.legalBasis,
         // LGPD: Art. 6º, I — finalidade — 5 anos a partir do cadastro (base: consentimento)
         retentionExpiresAt: new Date(Date.now() + 5 * 365 * 24 * 60 * 60 * 1000),

@@ -8,6 +8,7 @@
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate",
     "db:seed": "tsx src/db/seed.ts",
+    "db:encrypt-existing": "tsx src/db/encrypt-existing-data.ts",
     "db:studio": "drizzle-kit studio"
   },
   "dependencies": {

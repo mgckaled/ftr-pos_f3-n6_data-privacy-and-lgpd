@@ -13,6 +13,8 @@ import { authPlugin } from './modules/auth/plugin.js'
 import { patientsPlugin } from './modules/patients/plugin.js'
 import { appointmentsPlugin } from './modules/appointments/plugin.js'
 import { medicalRecordsPlugin } from './modules/medical-records/plugin.js'
+import { incidentsPlugin } from './modules/incidents/plugin.js'
+import { dpiaPlugin } from './modules/dpia/plugin.js'
 import { scheduleRetentionCleanup } from './jobs/retention-cleanup.js'
 
 const app = Fastify({ logger: true })
@@ -44,6 +46,8 @@ await app.register(fastifySwagger, {
       { name: 'patients', description: 'Titulares dos dados pessoais (Art. 5º, I)' },
       { name: 'appointments', description: 'Agendamentos — retenção 20 anos (CFM nº 1.821/2007)' },
       { name: 'medical-records', description: 'Prontuários — dados sensíveis de saúde (Art. 5º, II e Art. 11)' },
+      { name: 'incidents', description: 'Notificação de incidentes (Art. 48 + Resolução CD/ANPD nº 15/2024)' },
+      { name: 'dpia', description: 'Avaliação de Impacto à Proteção de Dados — Art. 38 (ISO/IEC 29134)' },
     ],
     components: {
       securitySchemes: {
@@ -68,6 +72,10 @@ await app.register(authPlugin, { prefix: '/auth' })
 await app.register(patientsPlugin, { prefix: '/patients' })
 await app.register(appointmentsPlugin, { prefix: '/appointments' })
 await app.register(medicalRecordsPlugin, { prefix: '/medical-records' })
+// LGPD: Art. 48 + Resolução CD/ANPD nº 15/2024 — gestão de incidentes de segurança
+await app.register(incidentsPlugin, { prefix: '/incidents' })
+// LGPD: Art. 38 — DPIA gerado pelo sistema como evidência de conformidade
+await app.register(dpiaPlugin, { prefix: '/dpia' })
 
 app.get('/health', async () => ({ status: 'ok' }))
 

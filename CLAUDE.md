@@ -162,6 +162,8 @@ Entregas: tabelas `appointments` e `medical_records`; fluxo de agendamento no fr
 
 Cobre: Módulo 3 (aprofundamento) e Módulo 5 (Documentação e Compliance — parte técnica).
 
+> **Antes de implementar:** execute `/seed-phase4` (commands/seed-phase4.md) para popular o banco com dados de teste que cobrem os cenários de criptografia, retenção vencida e consentimento revogado necessários para validar esta fase.
+
 Entregas: criptografia em repouso com `pgcrypto` nos campos sensíveis de `medical_records` e CPF de `patients`; variáveis de ambiente via `.env` sem nenhum segredo hardcoded; tabela `incidents` com endpoint de notificação; alerta automático quando `notifiedAnpdAt` se aproxima do prazo de 72h (Resolução CD/ANPD nº 15/2024); geração de DPIA como documento estruturado pelo sistema.
 
 ### Fase 5 — Painel do titular e dashboard de conformidade `[ ]`
