@@ -73,3 +73,24 @@ export const incidentStatusEnum = pgEnum('incident_status', [
   'notified',
   'resolved',
 ])
+
+// LGPD: Art. 18 — tipos de solicitações de direitos do titular (rol taxativo)
+export const dataRequestTypeEnum = pgEnum('data_request_type', [
+  'access',
+  'correction',
+  'deletion',
+  'portability',
+  'anonymization',
+  'revoke_consent',
+  'information',
+  'automated_decision_review',
+])
+
+// LGPD: Art. 18 — ciclo de vida da solicitação: aberta → em análise → concluída/negada/expirada
+export const dataRequestStatusEnum = pgEnum('data_request_status', [
+  'pending',
+  'in_progress',
+  'completed',
+  'denied',
+  'expired',
+])

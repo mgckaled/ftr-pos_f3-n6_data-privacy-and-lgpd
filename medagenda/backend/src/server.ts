@@ -15,6 +15,9 @@ import { appointmentsPlugin } from './modules/appointments/plugin.js'
 import { medicalRecordsPlugin } from './modules/medical-records/plugin.js'
 import { incidentsPlugin } from './modules/incidents/plugin.js'
 import { dpiaPlugin } from './modules/dpia/plugin.js'
+import { dataRequestsPlugin } from './modules/data-requests/plugin.js'
+import { privacyPlugin } from './modules/privacy/plugin.js'
+import { compliancePlugin } from './modules/compliance/plugin.js'
 import { scheduleRetentionCleanup } from './jobs/retention-cleanup.js'
 
 const app = Fastify({ logger: true })
@@ -48,6 +51,9 @@ await app.register(fastifySwagger, {
       { name: 'medical-records', description: 'Prontuários — dados sensíveis de saúde (Art. 5º, II e Art. 11)' },
       { name: 'incidents', description: 'Notificação de incidentes (Art. 48 + Resolução CD/ANPD nº 15/2024)' },
       { name: 'dpia', description: 'Avaliação de Impacto à Proteção de Dados — Art. 38 (ISO/IEC 29134)' },
+      { name: 'data-requests', description: 'Direitos do titular (Art. 18 LGPD) — fila com SLA de 15 dias corridos' },
+      { name: 'privacy', description: 'Painel do titular — visualizar, corrigir, exportar, revogar (Art. 18)' },
+      { name: 'compliance', description: 'ROPA (Art. 37), relatório de conformidade e audit logs — admin/DPO' },
     ],
     components: {
       securitySchemes: {
@@ -76,6 +82,12 @@ await app.register(medicalRecordsPlugin, { prefix: '/medical-records' })
 await app.register(incidentsPlugin, { prefix: '/incidents' })
 // LGPD: Art. 38 — DPIA gerado pelo sistema como evidência de conformidade
 await app.register(dpiaPlugin, { prefix: '/dpia' })
+// LGPD: Art. 18 — fila de direitos do titular com SLA de 15 dias corridos
+await app.register(dataRequestsPlugin, { prefix: '/data-requests' })
+// LGPD: Art. 18 — painel do titular: visualizar, corrigir, exportar, revogar
+await app.register(privacyPlugin, { prefix: '/privacy' })
+// LGPD: Art. 37 (ROPA) + Art. 6º, X — dashboard de conformidade para o DPO
+await app.register(compliancePlugin, { prefix: '/compliance' })
 
 app.get('/health', async () => ({ status: 'ok' }))
 

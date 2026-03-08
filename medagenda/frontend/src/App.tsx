@@ -8,6 +8,9 @@ import { PatientDetail } from '@/pages/patients/PatientDetail'
 import { AppointmentList } from '@/pages/appointments/AppointmentList'
 import { NewAppointment } from '@/pages/appointments/NewAppointment'
 import { AppointmentDetail } from '@/pages/appointments/AppointmentDetail'
+// LGPD: Art. 18 — painel do titular e dashboard DPO
+import { Privacy } from '@/pages/privacy/Privacy'
+import { Admin } from '@/pages/admin/Admin'
 
 function Placeholder({ label }: { label: string }) {
   return (
@@ -72,19 +75,21 @@ export function App() {
               }
             />
 
+            {/* LGPD: Art. 18 — dashboard DPO: fila data_requests, incidents, audit_logs, ROPA */}
             <Route
               path="/admin"
               element={
                 <ProtectedRoute roles={['admin']}>
-                  <Placeholder label="Dashboard Admin" />
+                  <Admin />
                 </ProtectedRoute>
               }
             />
+            {/* LGPD: Art. 18 — painel do titular: visualizar, corrigir, exportar, revogar */}
             <Route
               path="/privacy"
               element={
                 <ProtectedRoute roles={['patient']}>
-                  <Placeholder label="Painel do Titular" />
+                  <Privacy />
                 </ProtectedRoute>
               }
             />

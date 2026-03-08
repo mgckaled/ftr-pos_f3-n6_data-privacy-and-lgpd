@@ -158,7 +158,7 @@ Cobre: Módulo 2 (Ciclo de Vida dos Dados).
 
 Entregas: tabelas `appointments` e `medical_records`; fluxo de agendamento no frontend; políticas de retenção com `retentionExpiresAt`; job de limpeza automática (soft delete → hard delete por base legal); distinção explícita entre soft delete e eliminação real (Art. 5º, XIV); view materializada de estatísticas anonimizadas sem identificadores (Art. 5º, XI); pseudonimização operacional via `patient_tokens` nos logs; configuração do `@fastify/swagger` + `@scalar/fastify-api-reference` em `/reference` — todos os endpoints documentados com schemas Zod como fonte de verdade do OpenAPI spec.
 
-### Fase 4 — Segurança avançada e incidentes `[ ]`  ← FASE ATIVA
+### Fase 4 — Segurança avançada e incidentes `[x]`
 
 Cobre: Módulo 3 (aprofundamento) e Módulo 5 (Documentação e Compliance — parte técnica).
 
@@ -166,7 +166,7 @@ Cobre: Módulo 3 (aprofundamento) e Módulo 5 (Documentação e Compliance — p
 
 Entregas: criptografia em repouso com `pgcrypto` nos campos sensíveis de `medical_records` e CPF de `patients`; variáveis de ambiente via `.env` sem nenhum segredo hardcoded; tabela `incidents` com endpoint de notificação; alerta automático quando `notifiedAnpdAt` se aproxima do prazo de 72h (Resolução CD/ANPD nº 15/2024); geração de DPIA como documento estruturado pelo sistema.
 
-### Fase 5 — Painel do titular e dashboard de conformidade `[ ]`
+### Fase 5 — Painel do titular e dashboard de conformidade `[ ]` ← FASE ATIVA
 
 Cobre: Módulo 5 (Documentação e Compliance) e Módulo 6 (Responsabilidade do Profissional de TI).
 
