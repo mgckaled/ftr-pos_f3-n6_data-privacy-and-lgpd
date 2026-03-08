@@ -317,10 +317,10 @@ Cria um usuário por role para testes:
 
 | Role | E-mail | Senha |
 | --- | --- | --- |
-| admin | `admin@medagenda.dev` | `Admin@1234` |
-| doctor | `doctor@medagenda.dev` | `Doctor@1234` |
-| receptionist | `recep@medagenda.dev` | `Recep@1234` |
-| patient | `patient@medagenda.dev` | `Patient@1234` |
+| admin | `admin@medagenda.dev` | `Admin@123` |
+| doctor | `doctor@medagenda.dev` | `Doctor@123` |
+| receptionist | `recep@medagenda.dev` | `Recep@123` |
+| patient | `patient@medagenda.dev` | `Patient@123` |
 
 ## Convenção de comentários LGPD
 

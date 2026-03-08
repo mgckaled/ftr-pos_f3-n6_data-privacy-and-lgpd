@@ -130,7 +130,20 @@ export async function appointmentsPlugin(app: FastifyInstance) {
         request.params.id,
       )
 
-      if (!result) return reply.status(404).send({ error: 'Agendamento não encontrado' })
+      if (!result) {
+        // Verifica se o agendamento existe para distinguir "não encontrado" de "já cancelado"
+        const existing = await getAppointmentService(
+          request.user.userId,
+          request.user.role,
+          request.ip,
+          request.params.id,
+        )
+        if (existing) {
+          // LGPD: Art. 5º, XIV — agendamento cancelado não pode ser cancelado novamente
+          return reply.status(400).send({ error: 'Agendamento já está cancelado' })
+        }
+        return reply.status(404).send({ error: 'Agendamento não encontrado' })
+      }
 
       return reply.status(200).send(result)
     },

@@ -1,5 +1,5 @@
 import { drizzle } from 'drizzle-orm/node-postgres'
-import { and, eq, isNull, lt } from 'drizzle-orm'
+import { and, eq, isNull, lt, ne } from 'drizzle-orm'
 import { pool } from '../../db/index.js'
 import * as schema from '../../db/schema/index.js'
 import {
@@ -195,7 +195,8 @@ export async function cancelAppointmentService(
     const [updated] = await tx
       .update(appointments)
       .set({ status: 'cancelled', deletedAt: new Date(), updatedAt: new Date() })
-      .where(eq(appointments.id, appointmentId))
+      // LGPD: Art. 5º, XIV — só cancela se ainda não cancelado (idempotência segura)
+      .where(and(eq(appointments.id, appointmentId), ne(appointments.status, 'cancelled')))
       .returning({ id: appointments.id, patientId: appointments.patientId })
 
     if (!updated) {
